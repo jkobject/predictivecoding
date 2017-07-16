@@ -1,4 +1,4 @@
-function [Out,K,SNR]=Predict(Ka,va)
+%function [Out,K,SNR]=Predict(Ka,va)
 
 % Compute an theoritical output of the interneuron of the 1st layer of the
 % retina from an input image Ka, noised by a gaussian filter of variance va
@@ -16,20 +16,20 @@ function [Out,K,SNR]=Predict(Ka,va)
 warning('off','all')
 
 %initialisation of the values
-%Ka = imread('test.jpg');
-%va = 0.08;
+Ka = imread('cat.jpg');
+va = 0.008;
 Ka = rgb2gray(Ka);
 K = imnoise(Ka,'gaussian',0,va);
-psize = 3;
-H = 43;
-W = 64;
+psize = 6;
+H = 400;
+W = 600;
 Patchs = zeros(2*psize+H,2*psize+W);
 size = 2*psize;
 R1 = zeros(size^2,size^2);
 V = va^2;
 pospix = round(((size+1)^2)/2);
 Out = zeros(H-1,W-1);
-Ss = zeros((H-1)*(W-1),1);
+Ss = zeros(H-1,W-1);
 
 %creating the patch to which we will create small patches 
 Patchs(psize+1:end-psize,psize+1:end-psize) = K(:,:);
@@ -47,19 +47,29 @@ for indx = 1:H-1
         patch = Patchs(indx:indx+size,indy:indy+size);
         M = mean2(patch)^2; % we compute the important values of the patch 
         S = std2(patch);
-        Ss(indx*indy) = S; % to compute SNR
+        Ss(indx,indy) = S; % to compute SNR
         S= S^2;
-        for xIter = 1:size+1 
-            for yIter = 1:size+1
-                for xIt = 1:size+1
-                    for yIt = 1:size+1 % correlate each pixel to each other pixel 
-                        if(xIt*yIt~=xIter*yIter)
-                             R1(xIt*yIt, xIter*yIter) = M + S*exp((-sqrt((xIt-xIter)^2 + (yIt-yIter)^2)/psize)^2);
-                        else  % if its the self there is the importnace of the noise as well
-                             R1(xIt*yIt,xIt*yIt) =  M+S+V;
-                        end
-                    end
+        for xIter = 1:(size+1)^2 
+            for xIt = 1:(size+1)^2
+              if(xIter ~=xIt)  
+                if rem(xIter, size+1) == 0
+                     xR = size+1;
+                     xC = floor(xIter/size+1);
+                else
+                      xR = rem(xIter,size+1);
+                      xC = floor(xIter/size+1)+1;
                 end
+                if rem(xIt, size+1) == 0
+                      yR = size+1;
+                      yC = floor(xIt/size+1);
+                else
+                      yR = rem(xIt,size+1);
+                      yC = floor(xIt/size+1)+1;
+                end
+                R1(xIter, xIt) = M + S*exp((-sqrt((xR-yR)^2 + (xC-yC)^2)/psize)^2);
+              else  % if its the self there is the importnace of the noise as well
+                R1(xIter,xIt) =  M+S+V;
+              end
             end
         end
         % removes the values to create the system
@@ -75,7 +85,7 @@ for indx = 1:H-1
         Out(indx,indy) = K(indx,indy) - (sum(sum(H1.*patch))*255);
     end 
 end
-SNR = mean(Ss)/va;
+SNR = mean(mean(Ss))/va;
 
 
 
