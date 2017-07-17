@@ -16,13 +16,13 @@
 warning('off','all')
 
 %initialisation of the values
-Ka = imread('cat.jpg');
-va = 0.008;
+Ka = imread('test.jpg');
+va = 0.003;
 Ka = rgb2gray(Ka);
 K = imnoise(Ka,'gaussian',0,va);
-psize = 6;
-H = 400;
-W = 600;
+psize = 3;
+H = 43;
+W = 64;
 Patchs = zeros(2*psize+H,2*psize+W);
 size = 2*psize;
 R1 = zeros(size^2,size^2);
@@ -66,7 +66,7 @@ for indx = 1:H-1
                       yR = rem(xIt,size+1);
                       yC = floor(xIt/size+1)+1;
                 end
-                R1(xIter, xIt) = M + S*exp((-sqrt((xR-yR)^2 + (xC-yC)^2)/psize)^2);
+                R1(xIter, xIt) = M + S*exp(-((sqrt((xR-yR)^2 + (xC-yC)^2)/psize)));
               else  % if its the self there is the importnace of the noise as well
                 R1(xIter,xIt) =  M+S+V;
               end
@@ -79,7 +79,7 @@ for indx = 1:H-1
         h1 = linsolve(R, rhs); % the system resolving 
         h = [h1(1:pospix-1); 0; h1(pospix:end)];
         
-        h(h<0)=0; % no negative values in the synapse's weight
+        %h(h<0)=0; % no negative values in the synapse's weight
         H1 = reshape(h, size+1, size+1);
         
         Out(indx,indy) = K(indx,indy) - (sum(sum(H1.*patch))*255);
@@ -88,5 +88,5 @@ end
 SNR = mean(mean(Ss))/va;
 
 
-
+imagesc(Out);
         
